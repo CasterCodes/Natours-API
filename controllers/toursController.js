@@ -2,7 +2,29 @@ import Tour from "../models/tourModel.js";
 
 export const getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find({});
+    const queryObject = { ...req.query };
+
+    // Filtering
+
+    const exludedQueryStrings = ["page", "limit", "sort", "fields"];
+
+    exludedQueryStrings.forEach(
+      (queryString) => delete queryObject[queryString]
+    );
+
+    // Advanced Filtering
+    //mongoose query - {difficulty:'easy', duration:{$gte: 5}};
+    //postman query - { difficulty: 'easy', duration: { gte: '5' } }
+    let queryString = JSON.stringify(queryObject);
+
+    queryString = JSON.parse(
+      queryString.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`)
+    );
+
+    const query = Tour.find(queryString);
+
+    const tours = await query;
+
     res.status(200).json({
       status: "success",
       results: tours.length,
