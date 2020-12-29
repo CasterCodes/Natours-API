@@ -1,31 +1,17 @@
 import Tour from "../models/tourModel.js";
+import APIFeatures from "../utils/APIFeatures.js";
 
 export const getAllTours = async (req, res) => {
   try {
-    const queryObject = { ...req.query };
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .pagination();
 
-    // Filtering
+    const tours = await features.query;
 
-    const exludedQueryStrings = ["page", "limit", "sort", "fields"];
-
-    exludedQueryStrings.forEach(
-      (queryString) => delete queryObject[queryString]
-    );
-
-    // Advanced Filtering
-    //mongoose query - {difficulty:'easy', duration:{$gte: 5}};
-    //postman query - { difficulty: 'easy', duration: { gte: '5' } }
-    let queryString = JSON.stringify(queryObject);
-
-    queryString = JSON.parse(
-      queryString.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`)
-    );
-
-    const query = Tour.find(queryString);
-
-    const tours = await query;
-
-    res.status(200).json({
+    return res.status(200).json({
       status: "success",
       results: tours.length,
       data: { tours: tours },
