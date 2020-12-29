@@ -1,10 +1,16 @@
 import mongoose from "mongoose";
 
+import slugify from "slugify";
+
 const tourSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: [true, "A tour must have name"],
+      unique: true,
+    },
+    slug: {
+      type: String,
       unique: true,
     },
     duration: {
@@ -55,8 +61,17 @@ const tourSchema = new mongoose.Schema(
     images: [String],
     startDates: [Date],
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+tourSchema.virtual("durationInWeeks").get(function () {
+  return this.duration / 7;
+});
+
+tourSchema.pre("save", function (next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
 
 const tourModel = mongoose.model("Tour", tourSchema);
 
