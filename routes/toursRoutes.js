@@ -5,13 +5,10 @@ import {
   createTour,
   deleteTour,
   updateTour,
-  checkTour,
   getTourStat,
 } from "../controllers/toursController.js";
 
 const Router = express.Router();
-
-Router.param("id", checkTour);
 
 Router.route("/tour-stats").get(getTourStat);
 

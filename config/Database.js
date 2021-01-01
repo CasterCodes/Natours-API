@@ -13,7 +13,7 @@ const connection = async () => {
     });
     console.log(`Connected to mongo`);
   } catch (error) {
-    console.log(error);
+    console.log(error.name);
     process.exit(1);
   }
 };

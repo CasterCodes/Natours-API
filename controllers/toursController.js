@@ -1,168 +1,110 @@
 import Tour from "../models/tourModel.js";
 import APIFeatures from "../utils/APIFeatures.js";
+import AppError from "../utils/AppError.js";
+import catchAsync from "../utils/CatchAsync.js";
 
-export const getAllTours = async (req, res) => {
-  try {
-    const features = new APIFeatures(Tour.find(), req.query)
-      .filter()
-      .sort()
-      .limitFields()
-      .pagination();
+export const getAllTours = catchAsync(async (req, res, next) => {
+  const features = new APIFeatures(Tour.find(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .pagination();
 
-    const tours = await features.query;
+  const tours = await features.query;
 
-    return res.status(200).json({
-      status: "success",
-      results: tours.length,
-      data: { tours: tours },
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fali",
-      data: {
-        message: error,
-      },
-    });
-  }
-};
-export const getSingleTour = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const tour = await Tour.findById(id);
-    res.status(200).json({
-      status: "success",
-      data: {
-        tour: tour,
-      },
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: "fail",
-      data: {
-        message: error,
-      },
-    });
-  }
-};
-export const createTour = async (req, res) => {
-  try {
-    const newTour = await Tour.create({
-      name: req.body.name,
-      price: req.body.price,
-      rating: req.body.rating,
-    });
-    res.status(200).json({
-      status: "success",
-      data: {
-        tour: newTour,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      data: {
-        message: error,
-      },
-    });
-  }
-};
-export const updateTour = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updatedTour = await Tour.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    res.status(200).json({
-      status: "success",
-      data: {
-        tour: updatedTour,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      data: {
-        message: error,
-      },
-    });
-  }
-};
-export const deleteTour = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await Tour.findByIdAndDelete(id);
-    res.status(200).json({
-      status: "success",
-      data: {
-        tour: `Tour with ${req.params.id} was deleted`,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      data: {
-        message: error,
-      },
-    });
-  }
-};
-//middlewares
-export const checkTour = async (req, res, next, value) => {
-  try {
-    const tour = await Tour.findById(value);
-    if (!tour) {
-      return res.status(404).json({
-        status: "fail",
-        data: {
-          message: "invalid id",
-        },
-      });
-    }
-  } catch (error) {
-    console.log(error);
+  return res.status(200).json({
+    status: "success",
+    results: tours.length,
+    data: { tours: tours },
+  });
+});
+
+export const getSingleTour = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const tour = await Tour.findById(id);
+
+  if (!tour) {
+    return next(new AppError(`No tour with that id`, 404));
   }
 
-  next();
-};
+  res.status(200).json({
+    status: "success",
+    data: {
+      tour: tour,
+    },
+  });
+});
 
-export const getTourStat = async (req, res) => {
-  try {
-    const stats = await Tour.aggregate([
-      {
-        $match: {
-          ratingsAverage: { $gte: 4.5 },
-        },
-      },
-      {
-        $group: {
-          _id: "$difficulty",
-          numRating: { $sum: "$ratingQuantity" },
-          numTours: { $sum: 1 },
-          avgRating: { $avg: "$ratingsAverage" },
-          avgPrice: { $avg: "$price" },
-          minPrice: { $min: "$price" },
-          maxPrice: { $max: "$price" },
-        },
-      },
-      {
-        $sort: {
-          avgRating: 1,
-        },
-      },
-    ]);
-    res.status(200).json({
-      status: "success",
-      data: {
-        stats: stats,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      data: {
-        message: error,
-      },
-    });
+export const createTour = catchAsync(async (req, res, next) => {
+  const newTour = await Tour.create(req.body);
+  res.status(200).json({
+    status: "success",
+    data: {
+      tour: newTour,
+    },
+  });
+});
+
+export const updateTour = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const updatedTour = await Tour.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  if (!updateTour) {
+    return next(new AppError(`No tour with that id`, 404));
   }
-};
+  res.status(200).json({
+    status: "success",
+    data: {
+      tour: updatedTour,
+    },
+  });
+});
+export const deleteTour = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const tour = await Tour.findByIdAndDelete(id);
+
+  if (!tour) {
+    return next(new AppError(`No tour with that id`, 404));
+  }
+  res.status(200).json({
+    status: "success",
+    data: {
+      tour: `Tour with ${req.params.id} was deleted`,
+    },
+  });
+});
+
+export const getTourStat = catchAsync(async (req, res, next) => {
+  const stats = await Tour.aggregate([
+    {
+      $match: {
+        ratingsAverage: { $gte: 4.5 },
+      },
+    },
+    {
+      $group: {
+        _id: "$difficulty",
+        numRating: { $sum: "$ratingQuantity" },
+        numTours: { $sum: 1 },
+        avgRating: { $avg: "$ratingsAverage" },
+        avgPrice: { $avg: "$price" },
+        minPrice: { $min: "$price" },
+        maxPrice: { $max: "$price" },
+      },
+    },
+    {
+      $sort: {
+        avgRating: 1,
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: "success",
+    data: {
+      stats: stats,
+    },
+  });
+});
