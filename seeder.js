@@ -4,8 +4,6 @@ import dotenv from "dotenv";
 dotenv.config({ path: "" });
 
 import mongoose from "mongoose";
-const url =
-  "mongodb+srv://root2:code@castercluster.udpu7.mongodb.net/natourstwo?retryWrites=true&w=majority";
 
 mongoose
   .connect(url, {
